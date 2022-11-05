@@ -1,4 +1,0 @@
-pollination-streamlit-viewer>=0.4.5
-pollination-streamlit-io>=0.31.3
-pollination-streamlit>=0.3.0
-honeybee-vtk>=0.38.3
