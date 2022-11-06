@@ -26,7 +26,6 @@ jobs:
   release-on-github:
     name: Deploy to GitHub
     runs-on: ubuntu-latest
-    needs: test-docker
     if: github.ref == 'refs/heads/master' && github.event.repository.owner.name == 'pollination-apps'
     steps:
       - uses: actions/checkout@v2
