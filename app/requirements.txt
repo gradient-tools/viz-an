@@ -1,5 +1,5 @@
-pollination-streamlit-viewer==0.4.7
-pollination-streamlit-io==0.47.2
+pollination-streamlit-viewer==0.4.5
+pollination-streamlit-io==0.45.1
 pollination-streamlit==0.5.0
 honeybee-vtk==0.38.6
 rhino3dm==7.15.0

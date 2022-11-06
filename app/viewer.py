@@ -81,11 +81,14 @@ def show_model(hbjson_path: Path, target_folder: Path,
 
     vtkjs_name = f'{hbjson_path.stem}_vtkjs'
 
-    if vtkjs_name not in st.session_state:
-        vtkjs = write_vtkjs(hbjson_path, hbjson_path.stat().st_mtime, target_folder,
-                            grid_options)
-        st.session_state[vtkjs_name] = vtkjs
-    else:
-        vtkjs = st.session_state[vtkjs_name]
+    vtkjs = write_vtkjs(hbjson_path, hbjson_path.stat().st_mtime, target_folder,
+                        grid_options)
+
+    # if vtkjs_name not in st.session_state:
+    #     vtkjs = write_vtkjs(hbjson_path, hbjson_path.stat().st_mtime, target_folder,
+    #                         grid_options)
+    #     st.session_state[vtkjs_name] = vtkjs
+    # else:
+    #     vtkjs = st.session_state[vtkjs_name]
 
     viewer(content=vtkjs.read_bytes(), key=key, subscribe=subscribe)

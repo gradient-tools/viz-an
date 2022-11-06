@@ -35,7 +35,7 @@ def eval_hdr(hdr_path, target_folder: Path,
     evalglare_exe = evalglare_path.absolute().as_posix()
 
     # path to the evaluated HDR image
-    checkhdr_path = target_folder.joinpath('check_hdr.hdr')
+    checkhdr_path = target_folder.joinpath(f'check_{hdr_path.stem}.hdr')
 
     cmds = [evalglare_exe, '-c', checkhdr_path.as_posix()]
     # since pcomp is used to merge images, the input usually doesn't have view information
