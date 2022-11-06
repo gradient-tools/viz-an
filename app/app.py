@@ -3,21 +3,20 @@
 import tempfile
 import streamlit as st
 import rhino3dm
-import os
+
 
 from PIL import Image
 from pathlib import Path
 from pollination_streamlit_io import get_host
-# from honeybee_3dm.model import import_3dm
-
-from viewer import show_model
-from process_hdr import eval_hdr
+from honeybee_3dm.model import import_3dm
 from honeybee_radiance_command.ra_gif import Ra_GIF
 from honeybee_radiance.config import folders as rad_folders
 
+from viewer import show_model
+from process_hdr import eval_hdr, hdr_to_gif
+
 
 def main():
-    st.write('I am here')
 
     st.session_state.host = get_host()
     if not st.session_state.host:
@@ -39,17 +38,9 @@ def main():
     hdr_path = Path(r'assets\sample.hdr')
     evalglare_path = Path(r'assets\evalglare\evalglare.exe')
 
-    eval_hdr_path = eval_hdr(hdr_path, target_folder, evalglare_path)
+    eval_hdr_path, dgp, category = eval_hdr(hdr_path, target_folder, evalglare_path)
 
-    gif_path = target_folder.joinpath(f'{eval_hdr_path.stem}.gif')
-
-    ra_gif = Ra_GIF(input=eval_hdr_path.as_posix(), output=gif_path.as_posix())
-    env = None
-    if rad_folders.env != {}:
-        env = rad_folders.env
-    env = dict(os.environ, **env) if env else None
-
-    ra_gif.run(env, target_folder.as_posix())
+    gif_path = hdr_to_gif(eval_hdr_path, target_folder)
 
     image = Image.open(gif_path)
     st.image(image)

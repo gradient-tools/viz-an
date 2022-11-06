@@ -1,9 +1,11 @@
 import os
 import subprocess
-import math
+
 from pathlib import Path
+from typing import Tuple
 
 from honeybee_radiance.config import folders as rad_folders
+from honeybee_radiance_command.ra_gif import Ra_GIF
 
 
 def dgp_comfort_category(dgp):
@@ -18,9 +20,10 @@ def dgp_comfort_category(dgp):
         return 'Intolerable Glare'
 
 
-def eval_hdr(hdr_path, target_folder: Path, evalglare_path: Path) -> Path:
-    # check the input image to ensure it meets the criteria
+def eval_hdr(hdr_path, target_folder: Path,
+             evalglare_path: Path) -> Tuple[Path, float, str]:
 
+    # TODO: add them as parameters
     projection = '-vth'
     width = 800
     height = 800
@@ -28,15 +31,14 @@ def eval_hdr(hdr_path, target_folder: Path, evalglare_path: Path) -> Path:
     # get the path the the evalglare command and setup the check image argument
     evalglare_exe = evalglare_path.absolute().as_posix()
 
+    # path to the evaluated HDR image
     checkhdr_path = target_folder.joinpath('check_hdr.hdr')
-    cmds = [evalglare_exe, '-c', checkhdr_path.as_posix()]
 
+    cmds = [evalglare_exe, '-c', checkhdr_path.as_posix()]
     # since pcomp is used to merge images, the input usually doesn't have view information
     # add default view information for hemispheical fish-eye camera
     cmds.extend([projection, '-vv', '180', '-vh', '180'])
-
     cmds.append(hdr_path.as_posix())
-
     # run the evalglare command in a manner that lets us obtain the stdout result
     use_shell = True if os.name == 'nt' else False
     process = subprocess.Popen(cmds, stdout=subprocess.PIPE, shell=use_shell)
@@ -45,7 +47,21 @@ def eval_hdr(hdr_path, target_folder: Path, evalglare_path: Path) -> Path:
     # process the stdout result into the component outputs
     glare_result = stdout[0].decode('utf-8').split(':')[-1].strip()
     glare_indices = [float(val) for val in glare_result.split(' ')]
-    DGP = glare_indices.pop(0)
-    category = dgp_comfort_category(DGP)
+    dgp = glare_indices.pop(0)
+    category = dgp_comfort_category(dgp)
 
-    return checkhdr_path
+    return checkhdr_path, dgp, category
+
+
+def hdr_to_gif(hdr_path: Path, target_folder: Path) -> Path:
+    gif_path = target_folder.joinpath(f'{hdr_path.stem}.gif')
+
+    ra_gif = Ra_GIF(input=hdr_path.as_posix(), output=gif_path.as_posix())
+    env = None
+    if rad_folders.env != {}:
+        env = rad_folders.env
+    env = dict(os.environ, **env) if env else None
+
+    ra_gif.run(env, target_folder.as_posix())
+
+    return gif_path
