@@ -1,5 +1,6 @@
 import os
 import subprocess
+import streamlit as st
 
 from pathlib import Path
 from typing import Tuple
@@ -8,18 +9,20 @@ from honeybee_radiance.config import folders as rad_folders
 from honeybee_radiance_command.ra_gif import Ra_GIF
 
 
+@st.cache
 def dgp_comfort_category(dgp):
     """Get text for the glare comfort category given a DGP value."""
     if dgp < 0.35:
         return 'Imperceptible Glare'
-    elif dgp < 0.40:
+    if dgp < 0.40:
         return 'Perceptible Glare'
-    elif dgp < 0.45:
+    if dgp < 0.45:
         return 'Disturbing Glare'
-    else:
-        return 'Intolerable Glare'
+
+    return 'Intolerable Glare'
 
 
+@st.cache
 def eval_hdr(hdr_path, target_folder: Path,
              evalglare_path: Path) -> Tuple[Path, float, str]:
 
@@ -53,6 +56,7 @@ def eval_hdr(hdr_path, target_folder: Path,
     return checkhdr_path, dgp, category
 
 
+@st.cache
 def hdr_to_gif(hdr_path: Path, target_folder: Path) -> Path:
     gif_path = target_folder.joinpath(f'{hdr_path.stem}.gif')
 
