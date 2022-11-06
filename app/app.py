@@ -16,7 +16,7 @@ from honeybee_radiance.config import folders as rad_folders
 from pollination_streamlit_io import get_host
 
 from viewer import show_model
-from helper import write_config
+from helper import write_config, get_sky, get_views
 from process_hdr import eval_hdr, hdr_to_gif
 
 # TODO: add docstring to all the functions
@@ -25,7 +25,7 @@ from process_hdr import eval_hdr, hdr_to_gif
 def main():
 
     st.set_page_config(
-        page_title='Pre-Design Analysis',
+        page_title='Vizan',
         page_icon='images/favicon.png',
         layout='wide',
     )
@@ -33,7 +33,7 @@ def main():
     col1, col2, col3 = st.columns([1, 1, 1])
 
     with col2:
-        st.header('Viz-analysis')
+        st.header('Vizan')
         st.markdown('Upload a Rhino file that you would use to generate visualization in a'
                     ' a rendering engine such as Enscape, or V-ray.')
 
@@ -73,6 +73,10 @@ def main():
             transmittance = st.number_input('transparency of glass as a percentage',
                                             value=0.6, min_value=0.1, max_value=0.9)
 
+            north_angle = st.number_input('Counter clockwise rotation of North vector'
+                                          ' . A value between 0 and 360', value=0,
+                                          min_value=0, max_value=360)
+
             if 'epw' not in st.session_state or not st.session_state.epw:
                 epw_data = st.file_uploader('Upload EPW', type='epw')
 
@@ -85,11 +89,12 @@ def main():
                 epw = EPW(st.session_state.epw)
                 st.write(epw)
 
+            sky = get_sky(epw, north_angle)
+
             config_path = write_config(glass_layers, ignore_layers,
                                        transmittance, target_folder)
-            st.write(config_path)
 
-    #     views = rhino3dm_file.NamedViews
+            get_views(rhino3dm_file)
 
     # if 'rhino_file' in st.session_state and 'hbjson' not in st.session_state:
     #     hb_model = import_3dm(st.session_state.rhino_file.as_posix())
@@ -106,10 +111,7 @@ def main():
     # eval_hdr_path, dgp, category = eval_hdr(hdr_path, target_folder, evalglare_path)
 
     # gif_path = hdr_to_gif(eval_hdr_path, target_folder)
-
     # image = Image.open(gif_path)
     # st.image(image)
-
-
 if __name__ == '__main__':
     main()

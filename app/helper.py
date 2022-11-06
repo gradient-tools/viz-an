@@ -1,7 +1,14 @@
 import streamlit as st
 from pathlib import Path
 from typing import List
+
+from rhino3dm import File3dm
+
+from ladybug.epw import EPW
+from ladybug.dt import DateTime
 from honeybee_3dm.config import Config, LayerConfig, FaceObject
+from honeybee_radiance.lightsource.sky import ClimateBased
+from honeybee_radiance.view import View
 
 
 def write_mat_file(transmittance: float, target_folder: Path) -> Path:
@@ -59,3 +66,42 @@ def write_config(glass_layers: List[str],
         f.write(config.json())
 
     return config_path
+
+
+def get_brightest_hour(epw: EPW) -> int:
+
+    max_ill = epw.direct_normal_illuminance.max
+    hoy = None
+
+    for count, val in enumerate(epw.direct_normal_illuminance.values):
+        if val == max_ill:
+            hoy = count
+            break
+
+    return hoy
+
+
+def get_sky(epw: EPW, north_angle: int) -> str:
+
+    hoy = get_brightest_hour(epw)
+    dt = DateTime.from_hoy(hoy)
+    return ClimateBased.from_epw(epw, dt.month, dt.day, dt.hour, north_angle)
+
+
+def get_views(rh: File3dm) -> List[View]:
+
+    hb_views = []
+    views = rh.NamedViews
+    for view in views:
+        name = view.Name
+        location = view.Viewport.CameraLocation
+        direction = view.Viewport.CameraDirection
+        up_vector = view.Viewport.CameraUp
+
+        hb_views.append(View(name,
+                             (location.X, location.Y, location.Z),
+                             (direction.X, direction.Y, direction.Z),
+                             (up_vector.X, up_vector.Y, up_vector.Z),
+                             'h'))
+
+    return hb_views
