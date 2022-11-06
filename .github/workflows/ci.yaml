@@ -26,7 +26,7 @@ jobs:
   release-on-github:
     name: Deploy to GitHub
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event.repository.owner.name == 'pollination-apps'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
 
