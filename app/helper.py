@@ -1,14 +1,21 @@
 import streamlit as st
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from rhino3dm import File3dm
 
 from ladybug.epw import EPW
 from ladybug.dt import DateTime
+
+from honeybee_3dm.model import import_3dm
 from honeybee_3dm.config import Config, LayerConfig, FaceObject
 from honeybee_radiance.lightsource.sky import ClimateBased
 from honeybee_radiance.view import View
+
+
+def load_css():
+    with open('style.css') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 
 def write_mat_file(transmittance: float, target_folder: Path) -> Path:
@@ -36,11 +43,10 @@ def write_mat_file(transmittance: float, target_folder: Path) -> Path:
     return mat_file_path
 
 
-@st.cache
 def write_config(glass_layers: List[str],
                  ignore_layers: List[str],
                  transmittance: float,
-                 target_folder: Path) -> Path:
+                 target_folder: Path) -> Tuple[Config, Path]:
 
     mat_file_path = write_mat_file(transmittance, target_folder)
 
@@ -65,7 +71,7 @@ def write_config(glass_layers: List[str],
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(config.json())
 
-    return config_path
+    return config, config_path
 
 
 def get_brightest_hour(epw: EPW) -> int:
@@ -81,11 +87,13 @@ def get_brightest_hour(epw: EPW) -> int:
     return hoy
 
 
-def get_sky(epw: EPW, north_angle: int) -> str:
+def get_sky(epw: EPW, north_angle: int):
 
     hoy = get_brightest_hour(epw)
     dt = DateTime.from_hoy(hoy)
-    return ClimateBased.from_epw(epw, dt.month, dt.day, dt.hour, north_angle)
+    sky = ClimateBased.from_epw(epw, dt.month, dt.day, dt.hour, north_angle)
+    return f'climate-based -alt {sky.altitude} -az {sky.azimuth} -dni {sky.direct_normal_irradiance}'\
+        f' -dhi {sky.diffuse_horizontal_irradiance} -g {sky.ground_reflectance} '
 
 
 def get_views(rh: File3dm) -> List[View]:
@@ -105,3 +113,14 @@ def get_views(rh: File3dm) -> List[View]:
                              'h'))
 
     return hb_views
+
+
+@st.cache(hash_funcs={View: lambda v: v.to_dict()})
+def rhino_3dm_to_hbjson(rhino_3dm: File3dm, config: Config,
+                        config_path: Path, views: List[View],
+                        target_folder: Path) -> Path:
+    hb_model = import_3dm(
+        st.session_state.rhino_file.as_posix(), config_path=config_path)
+    hb_model.properties.radiance.add_views(views)
+    hb_model.to_hbjson('sample', target_folder)
+    return target_folder.joinpath('sample.hbjson')
